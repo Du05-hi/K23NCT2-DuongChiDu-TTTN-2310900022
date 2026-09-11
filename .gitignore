@@ -1,0 +1,14 @@
+# Python Virtual Environment & Cache
+venv/
+__pycache__/
+*.pyc
+
+# Node Modules & Build (Frontend)
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Databases & Secrets
+.env
+chroma_db/
+backend/chroma_db/
