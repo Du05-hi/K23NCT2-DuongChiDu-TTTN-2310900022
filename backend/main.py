@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 
 import requests
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
@@ -34,8 +34,7 @@ DATA_FILE_PATH = os.path.join(os.path.dirname(__file__), "data_nguyen_trai.txt")
 
 # ==================== ZALO CONFIGURATION ====================
 ZALO_APP_ID = "4111752213370896149"
-# Thay mã secret key của app bạn lấy từ trang Cài đặt ứng dụng vào đây:
-ZALO_APP_SECRET = "o4JLRW47dXP4K2kDBiVS" 
+ZALO_APP_SECRET = "o4JLRW47dX4PK2kDBiVS" 
 
 CURRENT_ACCESS_TOKEN = ""
 
@@ -88,6 +87,35 @@ def send_zalo_reply(user_id: str, text: str):
         print("Zalo Send Message Result:", res.json())
     except Exception as e:
         print("Lỗi gửi tin nhắn Zalo:", str(e))
+
+def process_zalo_message_async(sender_id: str, user_message: str):
+    """Hàm chạy ngầm xử lý Gemini AI và gửi tin nhắn Zalo mà không làm chậm Webhook."""
+    try:
+        # 1. Gọi Gemini AI
+        ai_reply = generate_ai_response(user_message)
+        context_used = search_context(user_message)
+        
+        # 2. Lưu MongoDB (nếu có kết nối)
+        try:
+            if chat_history_collection is not None:
+                chat_log = {
+                    "user_id": f"zalo_{sender_id}",
+                    "prompt": user_message,
+                    "reply": ai_reply,
+                    "context_used": context_used,
+                    "created_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                chat_history_collection.insert_one(chat_log)
+        except Exception as db_err:
+            print("Lỗi MongoDB (bỏ qua):", str(db_err))
+        
+        print(f"--> User ({sender_id}): {user_message}")
+        print(f"--> AI Reply: {ai_reply}")
+
+        # 3. Gửi câu trả lời về Zalo
+        send_zalo_reply(sender_id, ai_reply)
+    except Exception as e:
+        print("Lỗi xử lý tin nhắn ngầm:", str(e))
 
 class ChatRequest(BaseModel):
     user_id: Optional[str] = Field("guest", example="sv_2026")
@@ -145,7 +173,7 @@ def chat(request: ChatRequest):
             "context_used": context_used,
             "created_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
         }
-        chat_history_collection.insert_one(chat_log)
+        chat_log_result = chat_history_collection.insert_one(chat_log)
     
     return {
         "success": True,
@@ -189,7 +217,7 @@ async def verify_zalo_webhook(request: Request):
     return int(challenge) if challenge.isdigit() else challenge
 
 @app.post("/api/webhook/zalo")
-async def handle_zalo_message(request: Request):
+async def handle_zalo_message(request: Request, background_tasks: BackgroundTasks):
     try:
         data = await request.json()
         print("Zalo Webhook Event Received:", data)
@@ -201,29 +229,8 @@ async def handle_zalo_message(request: Request):
             user_message = data.get("message", {}).get("text", "")
             
             if user_message and sender_id:
-                # 1. Gemini AI + ChromaDB xử lý câu hỏi
-                ai_reply = generate_ai_response(user_message)
-                context_used = search_context(user_message)
-                
-                # 2. Lưu lịch sử vào MongoDB (bọc try-except để tránh sập nếu DB lỗi)
-                try:
-                    if chat_history_collection is not None:
-                        chat_log = {
-                            "user_id": f"zalo_{sender_id}",
-                            "prompt": user_message,
-                            "reply": ai_reply,
-                            "context_used": context_used,
-                            "created_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-                        }
-                        chat_history_collection.insert_one(chat_log)
-                except Exception as db_err:
-                    print("Lỗi lưu MongoDB (bỏ qua):", str(db_err))
-                
-                print(f"--> User ({sender_id}): {user_message}")
-                print(f"--> AI Reply: {ai_reply}")
-
-                # 3. Gửi tin nhắn phản hồi tự động về Zalo
-                send_zalo_reply(sender_id, ai_reply)
+                # Đưa task xử lý AI và gửi Zalo vào chạy ngầm để Webhook trả về 200 ngay lập tức
+                background_tasks.add_task(process_zalo_message_async, sender_id, user_message)
 
         return {"status": "success"}
     except Exception as e:
