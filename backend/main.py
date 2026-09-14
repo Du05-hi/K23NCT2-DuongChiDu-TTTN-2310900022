@@ -62,11 +62,9 @@ async def home():
     """
 
 # Endpoint trả về file HTML xác thực Zalo
-@app.get("/zalo_verifierN8Va4vkjNYj5djG8nBvW1GEwwIJp3DpD3Wn.html")
+@app.get("/zalo_verifierN8Va4vkjNYj5djG8nBvW1GEwwIJp3DpD3Wn.html", response_class=HTMLResponse)
 async def zalo_verifier():
-    if os.path.exists(VERIFIER_FILE_PATH):
-        return FileResponse(VERIFIER_FILE_PATH)
-    raise HTTPException(status_code=404, detail="File verifier not found")
+    return "There Is No Limit To What You Can Accomplish Using Zalo!"
 
 @app.get("/api/health")
 def health_check():
