@@ -1,14 +1,19 @@
-from fastapi.responses import FileResponse
-from datetime import datetime
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from typing import Optional
-from fastapi import Request
 import os
+from datetime import datetime
+from typing import Optional
 
-from backend.rag import init_sample_data, generate_ai_response, search_context, reload_chroma_data
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse
+from pydantic import BaseModel, Field
+
 from backend.database import chat_history_collection
+from backend.rag import (
+    generate_ai_response,
+    init_sample_data,
+    reload_chroma_data,
+    search_context,
+)
 
 app = FastAPI(
     title="Chatbot AI - Đại học Nguyễn Trãi",
@@ -25,6 +30,7 @@ app.add_middleware(
 )
 
 DATA_FILE_PATH = os.path.join(os.path.dirname(__file__), "data_nguyen_trai.txt")
+VERIFIER_FILE_PATH = os.path.join(os.path.dirname(__file__), "zalo_verifierN8Va4vkjNYj5djG8nBvW1GEwwIJp3DpD3Wn.html")
 
 class ChatRequest(BaseModel):
     user_id: Optional[str] = Field("guest", example="sv_2026")
@@ -36,6 +42,31 @@ class KnowledgeUpdateRequest(BaseModel):
 @app.on_event("startup")
 def startup_event():
     init_sample_data()
+
+# ==================== PUBLIC APIS & DOMAIN VERIFICATION ====================
+
+# Trang chủ trả về HTML chứa thẻ Meta xác thực domain Zalo
+@app.get("/", response_class=HTMLResponse)
+async def home():
+    return """
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <meta name="zalo-platform-site-verification" content="N8Va4vkjNYj5djG8nBvW1GEwwIJlp3DpD3Wn" />
+            <title>NTU Chatbot Backend</title>
+        </head>
+        <body>
+            <h1>NTU Chatbot Backend is running!</h1>
+        </body>
+    </html>
+    """
+
+# Endpoint trả về file HTML xác thực Zalo
+@app.get("/zalo_verifierN8Va4vkjNYj5djG8nBvW1GEwwIJp3DpD3Wn.html")
+async def zalo_verifier():
+    if os.path.exists(VERIFIER_FILE_PATH):
+        return FileResponse(VERIFIER_FILE_PATH)
+    raise HTTPException(status_code=404, detail="File verifier not found")
 
 @app.get("/api/health")
 def health_check():
@@ -71,7 +102,6 @@ def chat(request: ChatRequest):
 
 # ==================== ADMIN APIS ====================
 
-# 1. Lấy toàn bộ lịch sử chat từ MongoDB
 @app.get("/api/admin/history")
 def get_chat_history():
     if chat_history_collection is None:
@@ -79,7 +109,6 @@ def get_chat_history():
     logs = list(chat_history_collection.find({}, {"_id": 0}).sort("created_at", -1))
     return logs
 
-# 2. Đọc nội dung file tri thức
 @app.get("/api/admin/knowledge")
 def get_knowledge():
     if not os.path.exists(DATA_FILE_PATH):
@@ -87,35 +116,27 @@ def get_knowledge():
     with open(DATA_FILE_PATH, "r", encoding="utf-8") as f:
         return {"content": f.read()}
 
-# 3. Cập nhật file tri thức & Re-index lại ChromaDB tự động
 @app.post("/api/admin/knowledge")
 def update_knowledge(data: KnowledgeUpdateRequest):
     try:
         with open(DATA_FILE_PATH, "w", encoding="utf-8") as f:
             f.write(data.content)
         
-        # Gọi hàm re-index lại ChromaDB
         count = reload_chroma_data()
         return {"success": True, "message": f"Đã cập nhật dữ liệu và re-index {count} đoạn thông tin vào ChromaDB!"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-# --- Zalo Webhook Endpoints ---
+
+# ==================== ZALO WEBHOOK ENDPOINTS ====================
 
 @app.get("/api/webhook/zalo")
 async def verify_zalo_webhook(request: Request):
-    # Zalo gọi GET để xác thực URL Webhook
     params = request.query_params
     challenge = params.get("challenge", "")
     return int(challenge) if challenge.isdigit() else challenge
 
 @app.post("/api/webhook/zalo")
 async def handle_zalo_message(request: Request):
-    # Zalo gửi tin nhắn người dùng về đây
     data = await request.json()
     print("Zalo Webhook Event:", data)
     return {"status": "success"}
-
-
-@app.get("/zalo_verifierN8Va4vkjNYj5djG8nBvW1GEwwIJp3DpD3Wn.html")
-async def zalo_verifier():
-    return FileResponse("backend/zalo_verifierN8Va4vkjNYj5djG8nBvW1GEwwIJp3DpD3Wn.html")
