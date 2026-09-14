@@ -113,3 +113,8 @@ async def handle_zalo_message(request: Request):
     data = await request.json()
     print("Zalo Webhook Event:", data)
     return {"status": "success"}
+from fastapi.responses import FileResponse
+
+@app.get("/zalo_verifierN8Va4vkjNYj5djG8nBvW1GEwwIJp3DpD3Wn.html")
+async def zalo_verifier():
+    return FileResponse("backend/zalo_verifierN8Va4vkjNYj5djG8nBvW1GEwwIJp3DpD3Wn.html")
