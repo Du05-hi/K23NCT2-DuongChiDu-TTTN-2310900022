@@ -133,8 +133,42 @@ async def verify_zalo_webhook(request: Request):
     challenge = params.get("challenge", "")
     return int(challenge) if challenge.isdigit() else challenge
 
+# Cập nhật hàm handle_zalo_message trong backend/main.py
 @app.post("/api/webhook/zalo")
 async def handle_zalo_message(request: Request):
-    data = await request.json()
-    print("Zalo Webhook Event:", data)
-    return {"status": "success"}
+    try:
+        data = await request.json()
+        print("Zalo Webhook Event Received:", data)
+        
+        event_name = data.get("event_name")
+        
+        # Kiểm tra nếu là sự kiện người dùng gửi tin nhắn text cho OA
+        if event_name == "user_send_text":
+            sender_id = data.get("sender", {}).get("id")
+            user_message = data.get("message", {}).get("text", "")
+            
+            if user_message and sender_id:
+                # 1. Gọi RAG / Gemini AI lấy câu trả lời
+                ai_reply = generate_ai_response(user_message)
+                context_used = search_context(user_message)
+                
+                # 2. Lưu lịch sử vào MongoDB
+                if chat_history_collection is not None:
+                    chat_log = {
+                        "user_id": f"zalo_{sender_id}",
+                        "prompt": user_message,
+                        "reply": ai_reply,
+                        "context_used": context_used,
+                        "created_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                    chat_history_collection.insert_one(chat_log)
+                
+                print(f"--> User ({sender_id}): {user_message}")
+                print(f"--> AI Reply: {ai_reply}")
+
+                # (Nếu có Access Token từ Zalo OA, gọi Zalo Open API gửi ai_reply về cho sender_id ở đây)
+
+        return {"status": "success"}
+    except Exception as e:
+        print("Error handling Zalo webhook:", str(e))
+        return {"status": "error", "message": str(e)}
