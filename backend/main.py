@@ -2,9 +2,10 @@ import os
 from datetime import datetime
 from typing import Optional
 
+import requests
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from backend.database import chat_history_collection
@@ -30,7 +31,63 @@ app.add_middleware(
 )
 
 DATA_FILE_PATH = os.path.join(os.path.dirname(__file__), "data_nguyen_trai.txt")
-VERIFIER_FILE_PATH = os.path.join(os.path.dirname(__file__), "zalo_verifierN8Va4vkjNYj5djG8nBvW1GEwwIJp3DpD3Wn.html")
+
+# ==================== ZALO CONFIGURATION ====================
+ZALO_APP_ID = "4111752213370896149"
+# Thay mã secret key của app bạn lấy từ trang Cài đặt ứng dụng vào đây:
+ZALO_APP_SECRET = "o4JLRW47dXP4K2kDBiVS" 
+
+CURRENT_ACCESS_TOKEN = ""
+
+def get_zalo_access_token() -> str:
+    """Tự động lấy Zalo OA Access Token bằng App Credentials."""
+    global CURRENT_ACCESS_TOKEN
+    url = "https://oauth.zaloapp.com/v4/oa/access_token"
+    headers = {
+        "secret_key": ZALO_APP_SECRET,
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    data = {
+        "app_id": ZALO_APP_ID,
+        "grant_type": "client_credentials"
+    }
+    try:
+        res = requests.post(url, data=data, headers=headers)
+        res_data = res.json()
+        if "access_token" in res_data:
+            CURRENT_ACCESS_TOKEN = res_data["access_token"]
+            return CURRENT_ACCESS_TOKEN
+        print("Lỗi lấy Zalo Access Token:", res_data)
+        return CURRENT_ACCESS_TOKEN
+    except Exception as e:
+        print("Lỗi kết nối Zalo OAuth API:", str(e))
+        return CURRENT_ACCESS_TOKEN
+
+def send_zalo_reply(user_id: str, text: str):
+    """Gửi tin nhắn phản hồi trực tiếp tới Zalo của người dùng."""
+    token = get_zalo_access_token()
+    if not token:
+        print("Không thể gửi tin nhắn do thiếu Access Token Zalo.")
+        return
+
+    url = "https://openapi.zalo.me/v2.0/oa/message"
+    headers = {
+        "access_token": token,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "recipient": {
+            "user_id": user_id
+        },
+        "message": {
+            "text": text
+        }
+    }
+    try:
+        res = requests.post(url, json=payload, headers=headers)
+        print("Zalo Send Message Result:", res.json())
+    except Exception as e:
+        print("Lỗi gửi tin nhắn Zalo:", str(e))
 
 class ChatRequest(BaseModel):
     user_id: Optional[str] = Field("guest", example="sv_2026")
@@ -45,14 +102,13 @@ def startup_event():
 
 # ==================== PUBLIC APIS & DOMAIN VERIFICATION ====================
 
-# Trang chủ trả về HTML chứa thẻ Meta xác thực domain Zalo
 @app.get("/", response_class=HTMLResponse)
 async def home():
     return """
     <!DOCTYPE html>
     <html>
         <head>
-            <meta name="zalo-platform-site-verification" content="N8Va4vkjNYj5djG8nBvW1GEwwIJlp3DpD3Wn" />
+            <meta name="zalo-platform-site-verification" content="N8Va4vkjNYj5djG8nBvW1GEwwIJp3DpD3Wn" />
             <title>NTU Chatbot Backend</title>
         </head>
         <body>
@@ -61,7 +117,6 @@ async def home():
     </html>
     """
 
-# Endpoint trả về file HTML xác thực Zalo
 @app.get("/zalo_verifierN8Va4vkjNYj5djG8nBvW1GEwwIJp3DpD3Wn.html", response_class=HTMLResponse)
 async def zalo_verifier():
     return "There Is No Limit To What You Can Accomplish Using Zalo!"
@@ -133,7 +188,6 @@ async def verify_zalo_webhook(request: Request):
     challenge = params.get("challenge", "")
     return int(challenge) if challenge.isdigit() else challenge
 
-# Cập nhật hàm handle_zalo_message trong backend/main.py
 @app.post("/api/webhook/zalo")
 async def handle_zalo_message(request: Request):
     try:
@@ -142,17 +196,16 @@ async def handle_zalo_message(request: Request):
         
         event_name = data.get("event_name")
         
-        # Kiểm tra nếu là sự kiện người dùng gửi tin nhắn text cho OA
         if event_name == "user_send_text":
             sender_id = data.get("sender", {}).get("id")
             user_message = data.get("message", {}).get("text", "")
             
             if user_message and sender_id:
-                # 1. Gọi RAG / Gemini AI lấy câu trả lời
+                # 1. Gemini AI + ChromaDB xử lý câu hỏi
                 ai_reply = generate_ai_response(user_message)
                 context_used = search_context(user_message)
                 
-                # 2. Lưu lịch sử vào MongoDB
+                # 2. Lưu nhật ký chat vào MongoDB
                 if chat_history_collection is not None:
                     chat_log = {
                         "user_id": f"zalo_{sender_id}",
@@ -166,7 +219,8 @@ async def handle_zalo_message(request: Request):
                 print(f"--> User ({sender_id}): {user_message}")
                 print(f"--> AI Reply: {ai_reply}")
 
-                # (Nếu có Access Token từ Zalo OA, gọi Zalo Open API gửi ai_reply về cho sender_id ở đây)
+                # 3. Gửi tin nhắn trả lời tự động về ứng dụng Zalo
+                send_zalo_reply(sender_id, ai_reply)
 
         return {"status": "success"}
     except Exception as e:
