@@ -3,6 +3,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional
+from fastapi import Request
 import os
 
 from backend.rag import init_sample_data, generate_ai_response, search_context, reload_chroma_data
@@ -97,3 +98,18 @@ def update_knowledge(data: KnowledgeUpdateRequest):
         return {"success": True, "message": f"Đã cập nhật dữ liệu và re-index {count} đoạn thông tin vào ChromaDB!"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+# --- Zalo Webhook Endpoints ---
+
+@app.get("/api/webhook/zalo")
+async def verify_zalo_webhook(request: Request):
+    # Zalo gọi GET để xác thực URL Webhook
+    params = request.query_params
+    challenge = params.get("challenge", "")
+    return int(challenge) if challenge.isdigit() else challenge
+
+@app.post("/api/webhook/zalo")
+async def handle_zalo_message(request: Request):
+    # Zalo gửi tin nhắn người dùng về đây
+    data = await request.json()
+    print("Zalo Webhook Event:", data)
+    return {"status": "success"}
