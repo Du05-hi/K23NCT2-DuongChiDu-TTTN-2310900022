@@ -162,19 +162,25 @@ def chat(request: ChatRequest):
     if not request.prompt.strip():
         raise HTTPException(status_code=400, detail="Câu hỏi không được để trống.")
     
+    # 1. Gọi Gemini AI & ChromaDB
     ai_reply = generate_ai_response(request.prompt)
     context_used = search_context(request.prompt)
     
-    if chat_history_collection is not None:
-        chat_log = {
-            "user_id": request.user_id,
-            "prompt": request.prompt,
-            "reply": ai_reply,
-            "context_used": context_used,
-            "created_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-        }
-        chat_log_result = chat_history_collection.insert_one(chat_log)
+    # 2. Lưu lịch sử vào MongoDB (Bọc try-except để không bị lỗi 500 nếu mất kết nối DB)
+    try:
+        if chat_history_collection is not None:
+            chat_log = {
+                "user_id": request.user_id,
+                "prompt": request.prompt,
+                "reply": ai_reply,
+                "context_used": context_used,
+                "created_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+            }
+            chat_history_collection.insert_one(chat_log)
+    except Exception as db_err:
+        print("Lỗi MongoDB khi chat (bỏ qua):", str(db_err))
     
+    # 3. Trả về câu trả lời cho Swagger/Frontend
     return {
         "success": True,
         "reply": ai_reply,
