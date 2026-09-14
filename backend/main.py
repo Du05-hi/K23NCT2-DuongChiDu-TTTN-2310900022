@@ -205,21 +205,24 @@ async def handle_zalo_message(request: Request):
                 ai_reply = generate_ai_response(user_message)
                 context_used = search_context(user_message)
                 
-                # 2. Lưu nhật ký chat vào MongoDB
-                if chat_history_collection is not None:
-                    chat_log = {
-                        "user_id": f"zalo_{sender_id}",
-                        "prompt": user_message,
-                        "reply": ai_reply,
-                        "context_used": context_used,
-                        "created_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-                    }
-                    chat_history_collection.insert_one(chat_log)
+                # 2. Lưu lịch sử vào MongoDB (bọc try-except để tránh sập nếu DB lỗi)
+                try:
+                    if chat_history_collection is not None:
+                        chat_log = {
+                            "user_id": f"zalo_{sender_id}",
+                            "prompt": user_message,
+                            "reply": ai_reply,
+                            "context_used": context_used,
+                            "created_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                        }
+                        chat_history_collection.insert_one(chat_log)
+                except Exception as db_err:
+                    print("Lỗi lưu MongoDB (bỏ qua):", str(db_err))
                 
                 print(f"--> User ({sender_id}): {user_message}")
                 print(f"--> AI Reply: {ai_reply}")
 
-                # 3. Gửi tin nhắn trả lời tự động về ứng dụng Zalo
+                # 3. Gửi tin nhắn phản hồi tự động về Zalo
                 send_zalo_reply(sender_id, ai_reply)
 
         return {"status": "success"}
