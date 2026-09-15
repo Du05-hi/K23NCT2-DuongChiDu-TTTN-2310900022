@@ -36,37 +36,18 @@ DATA_FILE_PATH = os.path.join(os.path.dirname(__file__), "data_nguyen_trai.txt")
 ZALO_APP_ID = "4111752213370896149"
 ZALO_APP_SECRET = "o4JLRW47dX4PK2kDBiVS" 
 
-CURRENT_ACCESS_TOKEN = ""
+
+ZALO_OA_ACCESS_TOKEN = "ZiOoQIzK5ZsDnJHlBb4NDeV4DMCkINvq_ACkMGHKSLppWmLQ5XXUG_3Q24K8INnBqu47Mn0LPNdtZqLI2nWOGzNmON4_5a1JxCCNP0mqVLBK-GW0DHLX6CduD3uOCn45uFndDm5dH2ph_GC8IJ9yMQ321bn5KM14dBqr45rt5aEcasXnMq8kHeEB16DPRdyphu0Q2bvwUJgjdJmMS0yNBQx3SJLfAr4RaBXq06zL4W-6X7W9Gce6Afc5H0P04ozHalj6PsGjRLR3np5E0I9WIDRrEH0n8b91wlOsJ103Grgq_mD9IoHrMP7330r25LSPa8O2LJPqHNxSk05A64rAJT2j4qyDGsWThvXMC4bhV3sh-LiGTm0X9bSoaACJOIfB5Ja"
 
 def get_zalo_access_token() -> str:
-    """Tự động lấy Zalo OA Access Token bằng App Credentials."""
-    global CURRENT_ACCESS_TOKEN
-    url = "https://oauth.zaloapp.com/v4/oa/access_token"
-    headers = {
-        "secret_key": ZALO_APP_SECRET,
-        "Content-Type": "application/x-www-form-urlencoded"
-    }
-    data = {
-        "app_id": ZALO_APP_ID,
-        "grant_type": "client_credentials"
-    }
-    try:
-        res = requests.post(url, data=data, headers=headers)
-        res_data = res.json()
-        if "access_token" in res_data:
-            CURRENT_ACCESS_TOKEN = res_data["access_token"]
-            return CURRENT_ACCESS_TOKEN
-        print("Lỗi lấy Zalo Access Token:", res_data)
-        return CURRENT_ACCESS_TOKEN
-    except Exception as e:
-        print("Lỗi kết nối Zalo OAuth API:", str(e))
-        return CURRENT_ACCESS_TOKEN
+    """Trả về Access Token trực tiếp cho OA Testing/Chưa duyệt."""
+    return ZALO_OA_ACCESS_TOKEN
 
 def send_zalo_reply(user_id: str, text: str):
     """Gửi tin nhắn phản hồi trực tiếp tới Zalo của người dùng."""
     token = get_zalo_access_token()
-    if not token:
-        print("Không thể gửi tin nhắn do thiếu Access Token Zalo.")
+    if not token or token == "ZiOoQIzK5ZsDnJHlBb4NDeV4DMCkINvq_ACkMGHKSLppWmLQ5XXUG_3Q24K8INnBqu47Mn0LPNdtZqLI2nWOGzNmON4_5a1JxCCNP0mqVLBK-GW0DHLX6CduD3uOCn45uFndDm5dH2ph_GC8IJ9yMQ321bn5KM14dBqr45rt5aEcasXnMq8kHeEB16DPRdyphu0Q2bvwUJgjdJmMS0yNBQx3SJLfAr4RaBXq06zL4W-6X7W9Gce6Afc5H0P04ozHalj6PsGjRLR3np5E0I9WIDRrEH0n8b91wlOsJ103Grgq_mD9IoHrMP7330r25LSPa8O2LJPqHNxSk05A64rAJT2j4qyDGsWThvXMC4bhV3sh-LiGTm0X9bSoaACJOIfB5Ja":
+        print("Không thể gửi tin nhắn do thiếu ZALO_OA_ACCESS_TOKEN hợp lệ.")
         return
 
     url = "https://openapi.zalo.me/v2.0/oa/message"
