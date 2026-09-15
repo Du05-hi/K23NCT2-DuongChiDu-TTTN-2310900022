@@ -1,5 +1,5 @@
 import os
-import ssl
+import certifi
 from pymongo import MongoClient
 from dotenv import load_dotenv
 
@@ -9,12 +9,13 @@ MONGO_URI = "mongodb+srv://duongchidu30072005_db_user:123456Du@cluster0.hj9fwnw.
 DB_NAME = os.getenv("MONGO_DB_NAME", "nguyen_trai_chatbot")
 
 try:
-    # Bỏ qua hoàn toàn SSL verification ở cấp độ thư viện ssl của Python
     client = MongoClient(
         MONGO_URI,
+        tls=True,
+        tlsAllowInvalidCertificates=True,
+        tlsCAFile=certifi.where(),
         serverSelectionTimeoutMS=5000,
-        connectTimeoutMS=5000,
-        ssl_cert_reqs=ssl.CERT_NONE
+        connectTimeoutMS=5000
     )
     db = client[DB_NAME]
     chat_history_collection = db["chat_history"]
