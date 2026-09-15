@@ -1,15 +1,19 @@
 import os
+import certifi
 from pymongo import MongoClient
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Gán trực tiếp chuỗi MongoDB Atlas Cloud
 MONGO_URI = "mongodb+srv://duongchidu30072005_db_user:123456Du@cluster0.hj9fwnw.mongodb.net/?appName=Cluster0"
 DB_NAME = os.getenv("MONGO_DB_NAME", "nguyen_trai_chatbot")
 
 try:
-    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    client = MongoClient(
+        MONGO_URI, 
+        serverSelectionTimeoutMS=5000,
+        tlsCAFile=certifi.where()
+    )
     db = client[DB_NAME]
     chat_history_collection = db["chat_history"]
     documents_collection = db["documents"]
