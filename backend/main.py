@@ -41,7 +41,7 @@ DATA_FILE_PATH = os.path.join(os.path.dirname(__file__), "data_nguyen_trai.txt")
 ZALO_APP_ID = "4111752213370896149"
 ZALO_APP_SECRET = "o4JLRW47dX4PK2kDBiVS" 
 
-ZALO_OA_ACCESS_TOKEN = "DÁN_ACCESS_TOKEN_CỦA_BẠN_VÀO_ĐÂY"
+ZALO_OA_ACCESS_TOKEN = "0D4hVBG66L03qYrwjGCOMmdJB7Qr6t43QQGXRO5xRq5txWSSX3fhI6U5MG2912zgKwr_0k8S2qejZ4OgsIqEUnw7VnhYLILR7kmK5C9yIMmpmnelsrz-GItUBs7uG1mWFD9iLUa53GLKrqCajLWVJ0BxK1_-V099DlPJ0_TQ4LqjqqC2mam-Aox32t3wO6qRERLUJkjbCtetz78bWpyuKZ2UM2VFB3u90lj_QEDQ2JrBwpu9f7LUV1d_6ZEfO7eU0VKMJRHcUM9erJOSf0i6GN2gQGoqAG0X2VzLQyDy1nC0w6bT_7y87Z_yGM7UT758B-Wz4k9xL5GenM8do4O2IYgMNoFW83jnC9C86iCbD5Gkd64zyZOqStLYXUO56R4P6bG"
 
 def get_zalo_access_token() -> str:
     """Trả về Access Token trực tiếp cho OA Testing/Chưa duyệt."""
@@ -50,7 +50,7 @@ def get_zalo_access_token() -> str:
 def send_zalo_reply(user_id: str, text: str):
     """Gửi tin nhắn phản hồi trực tiếp tới Zalo của người dùng."""
     token = get_zalo_access_token()
-    if not token or token == "DÁN_ACCESS_TOKEN_CỦA_BẠN_VÀO_ĐÂY":
+    if not token or token == "0D4hVBG66L03qYrwjGCOMmdJB7Qr6t43QQGXRO5xRq5txWSSX3fhI6U5MG2912zgKwr_0k8S2qejZ4OgsIqEUnw7VnhYLILR7kmK5C9yIMmpmnelsrz-GItUBs7uG1mWFD9iLUa53GLKrqCajLWVJ0BxK1_-V099DlPJ0_TQ4LqjqqC2mam-Aox32t3wO6qRERLUJkjbCtetz78bWpyuKZ2UM2VFB3u90lj_QEDQ2JrBwpu9f7LUV1d_6ZEfO7eU0VKMJRHcUM9erJOSf0i6GN2gQGoqAG0X2VzLQyDy1nC0w6bT_7y87Z_yGM7UT758B-Wz4k9xL5GenM8do4O2IYgMNoFW83jnC9C86iCbD5Gkd64zyZOqStLYXUO56R4P6bG":
         print("Không thể gửi tin nhắn do thiếu ZALO_OA_ACCESS_TOKEN hợp lệ.")
         return
 
