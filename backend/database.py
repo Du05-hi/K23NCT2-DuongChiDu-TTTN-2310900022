@@ -1,5 +1,4 @@
 import os
-import certifi
 from pymongo import MongoClient
 from dotenv import load_dotenv
 
@@ -12,7 +11,8 @@ try:
     client = MongoClient(
         MONGO_URI, 
         serverSelectionTimeoutMS=5000,
-        tlsCAFile=certifi.where()
+        tls=True,
+        tlsAllowInvalidCertificates=True
     )
     db = client[DB_NAME]
     chat_history_collection = db["chat_history"]
