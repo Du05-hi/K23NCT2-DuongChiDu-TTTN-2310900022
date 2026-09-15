@@ -132,10 +132,19 @@ async def zalo_verifier():
 
 @app.get("/api/health")
 def health_check():
+    db_status = "Disconnected"
+    total_logs = 0
+    try:
+        if chat_history_collection is not None:
+            total_logs = chat_history_collection.count_documents({})
+            db_status = "MongoDB Connected"
+    except Exception as e:
+        db_status = f"MongoDB Error: {str(e)}"
+
     return {
         "status": "online",
-        "database": "MongoDB Connected",
-        "total_chat_logs": chat_history_collection.count_documents({}) if chat_history_collection is not None else 0
+        "database": db_status,
+        "total_chat_logs": total_logs
     }
 
 @app.post("/api/chat")
