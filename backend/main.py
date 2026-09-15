@@ -8,7 +8,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
-from backend.database import chat_history_collection
+try:
+    from backend.database import chat_history_collection
+except Exception as e:
+    print("Không thể kết nối MongoDB:", str(e))
+    chat_history_collection = None
+
 from backend.rag import (
     generate_ai_response,
     init_sample_data,
@@ -36,8 +41,7 @@ DATA_FILE_PATH = os.path.join(os.path.dirname(__file__), "data_nguyen_trai.txt")
 ZALO_APP_ID = "4111752213370896149"
 ZALO_APP_SECRET = "o4JLRW47dX4PK2kDBiVS" 
 
-
-ZALO_OA_ACCESS_TOKEN = "ZiOoQIzK5ZsDnJHlBb4NDeV4DMCkINvq_ACkMGHKSLppWmLQ5XXUG_3Q24K8INnBqu47Mn0LPNdtZqLI2nWOGzNmON4_5a1JxCCNP0mqVLBK-GW0DHLX6CduD3uOCn45uFndDm5dH2ph_GC8IJ9yMQ321bn5KM14dBqr45rt5aEcasXnMq8kHeEB16DPRdyphu0Q2bvwUJgjdJmMS0yNBQx3SJLfAr4RaBXq06zL4W-6X7W9Gce6Afc5H0P04ozHalj6PsGjRLR3np5E0I9WIDRrEH0n8b91wlOsJ103Grgq_mD9IoHrMP7330r25LSPa8O2LJPqHNxSk05A64rAJT2j4qyDGsWThvXMC4bhV3sh-LiGTm0X9bSoaACJOIfB5Ja"
+ZALO_OA_ACCESS_TOKEN = "DÁN_ACCESS_TOKEN_CỦA_BẠN_VÀO_ĐÂY"
 
 def get_zalo_access_token() -> str:
     """Trả về Access Token trực tiếp cho OA Testing/Chưa duyệt."""
@@ -46,7 +50,7 @@ def get_zalo_access_token() -> str:
 def send_zalo_reply(user_id: str, text: str):
     """Gửi tin nhắn phản hồi trực tiếp tới Zalo của người dùng."""
     token = get_zalo_access_token()
-    if not token or token == "ZiOoQIzK5ZsDnJHlBb4NDeV4DMCkINvq_ACkMGHKSLppWmLQ5XXUG_3Q24K8INnBqu47Mn0LPNdtZqLI2nWOGzNmON4_5a1JxCCNP0mqVLBK-GW0DHLX6CduD3uOCn45uFndDm5dH2ph_GC8IJ9yMQ321bn5KM14dBqr45rt5aEcasXnMq8kHeEB16DPRdyphu0Q2bvwUJgjdJmMS0yNBQx3SJLfAr4RaBXq06zL4W-6X7W9Gce6Afc5H0P04ozHalj6PsGjRLR3np5E0I9WIDRrEH0n8b91wlOsJ103Grgq_mD9IoHrMP7330r25LSPa8O2LJPqHNxSk05A64rAJT2j4qyDGsWThvXMC4bhV3sh-LiGTm0X9bSoaACJOIfB5Ja":
+    if not token or token == "DÁN_ACCESS_TOKEN_CỦA_BẠN_VÀO_ĐÂY":
         print("Không thể gửi tin nhắn do thiếu ZALO_OA_ACCESS_TOKEN hợp lệ.")
         return
 
@@ -107,7 +111,10 @@ class KnowledgeUpdateRequest(BaseModel):
 
 @app.on_event("startup")
 def startup_event():
-    init_sample_data()
+    try:
+        init_sample_data()
+    except Exception as e:
+        print("Lỗi nạp sample data ChromaDB:", str(e))
 
 # ==================== PUBLIC APIS & DOMAIN VERIFICATION ====================
 
@@ -187,8 +194,12 @@ def chat(request: ChatRequest):
 def get_chat_history():
     if chat_history_collection is None:
         return []
-    logs = list(chat_history_collection.find({}, {"_id": 0}).sort("created_at", -1))
-    return logs
+    try:
+        logs = list(chat_history_collection.find({}, {"_id": 0}).sort("created_at", -1))
+        return logs
+    except Exception as e:
+        print("Lỗi lấy lịch sử chat:", str(e))
+        return []
 
 @app.get("/api/admin/knowledge")
 def get_knowledge():
