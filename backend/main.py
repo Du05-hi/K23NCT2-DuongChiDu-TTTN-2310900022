@@ -38,10 +38,12 @@ app.add_middleware(
 DATA_FILE_PATH = os.path.join(os.path.dirname(__file__), "data_nguyen_trai.txt")
 
 # ==================== ZALO CONFIGURATION ====================
+# ==================== ZALO CONFIGURATION ====================
 ZALO_APP_ID = "4111752213370896149"
 ZALO_APP_SECRET = "o4JLRW47dX4PK2kDBiVS" 
 
-ZALO_OA_ACCESS_TOKEN = "JGVH0u9H27LE1DS5WrG9VaG5rWc3J6uT31ZH99OSK1GyFlePk11wOWW1hLEoC1PqOJsQS_eBDNmn8vT7bHiKNGeMkqQ1FGnQIJwWNlzeTrKtQlfWcJHQGIG-zaRi279tIWUlMuGqR64uAxH0jmiIMWCWcKgv8ZXxVXMPJzaUMajW2_bwrLfDQ6PJbbdrR3nvU2QsVkS420ej3T0nXbffEK5ypqZuS4z-QKxkSE94DdLI6xLfcaGPOL5xhqNgRJ1iSLFdGU1QVrHrU-Txn4PhRdPYua3DD5qtHHl-AzWLP2Ho4TukwWz91b5SxmttUKilK2tG5le_VHmzFTqSbXn1ArWnvY_41YKyPGNx2iq0Mm5nCEmIIrR-P-v3XquBSG"
+# Dán Token mới vào trong 2 dấu ngoặc kép "" bên dưới
+ZALO_OA_ACCESS_TOKEN = "JGVH0U9H2/LE1DS5WrG9VaG5ZWc3J6u13IZH990SKiGyF1ePklIWOwN1hLE0C1PqOJgQS_eBUNmn8v17bH1KNGeMkqQ1FGnQ1JWWN1ze1rKtQ1fNcJHQG1G-zaRt279+TWJ1HuGqR64uAxH0jmiTNWCWoKgv87XxVXNPJzaUNajW2_bwrlfD06PJbboR3nvU2QsVkS420ej3T0nXbffFK5ypqZuS4z-QKxKSE94DcLI6xLicaGP0L5xhqNgRJ1iSLFdGU1QVzHzU-Txn4PhRDPYua3DD5qLHN1-AzMLP2Ho4lukmNZ91b5SxmttUK11K2tG5le_VHmzFTqSbXn1AiWnvY_41YKyPGNx21qGMm5rCEml1rH-P-v3XquBSG"
 
 def get_zalo_access_token() -> str:
     """Trả về Access Token trực tiếp cho OA Testing/Chưa duyệt."""
