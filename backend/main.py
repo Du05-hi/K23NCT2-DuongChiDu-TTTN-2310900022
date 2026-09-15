@@ -52,7 +52,7 @@ def get_zalo_access_token() -> str:
 def send_zalo_reply(user_id: str, text: str):
     """Gửi tin nhắn phản hồi trực tiếp tới Zalo của người dùng."""
     token = get_zalo_access_token()
-    if not token or token == "JGVH0u9H27LE1DS5WrG9VaG5rWc3J6uT31ZH99OSK1GyFlePk11wOWW1hLEoC1PqOJsQS_eBDNmn8vT7bHiKNGeMkqQ1FGnQIJwWNlzeTrKtQlfWcJHQGIG-zaRi279tIWUlMuGqR64uAxH0jmiIMWCWcKgv8ZXxVXMPJzaUMajW2_bwrLfDQ6PJbbdrR3nvU2QsVkS420ej3T0nXbffEK5ypqZuS4z-QKxkSE94DdLI6xLfcaGPOL5xhqNgRJ1iSLFdGU1QVrHrU-Txn4PhRdPYua3DD5qtHHl-AzWLP2Ho4TukwWz91b5SxmttUKilK2tG5le_VHmzFTqSbXn1ArWnvY_41YKyPGNx2iq0Mm5nCEmIIrR-P-v3XquBSG"
+    if not token or token == "JGVH0u9H27LE1DS5WrG9VaG5rWc3J6uT31ZH99OSK1GyFlePk11wOWW1hLEoC1PqOJsQS_eBDNmn8vT7bHiKNGeMkqQ1FGnQIJwWNlzeTrKtQlfWcJHQGIG-zaRi279tIWUlMuGqR64uAxH0jmiIMWCWcKgv8ZXxVXMPJzaUMajW2_bwrLfDQ6PJbbdrR3nvU2QsVkS420ej3T0nXbffEK5ypqZuS4z-QKxkSE94DdLI6xLfcaGPOL5xhqNgRJ1iSLFdGU1QVrHrU-Txn4PhRdPYua3DD5qtHHl-AzWLP2Ho4TukwWz91b5SxmttUKilK2tG5le_VHmzFTqSbXn1ArWnvY_41YKyPGNx2iq0Mm5nCEmIIrR-P-v3XquBSG":
         return
 
     url = "https://openapi.zalo.me/v2.0/oa/message"
